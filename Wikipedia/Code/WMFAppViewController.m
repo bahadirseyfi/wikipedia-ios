@@ -1251,6 +1251,7 @@ NSString *const WMFLanguageVariantAlertsLibraryVersion = @"WMFLanguageVariantAle
     switch ([activity wmf_type]) {
         case WMFUserActivityTypeExplore:
         case WMFUserActivityTypePlaces:
+        case WMFUserActivityTypeNamedPlace:
         case WMFUserActivityTypeSavedPages:
         case WMFUserActivityTypeSearch:
         case WMFUserActivityTypeSettings:
@@ -1306,6 +1307,20 @@ NSString *const WMFLanguageVariantAlertsLibraryVersion = @"WMFLanguageVariantAle
                 [[self placesViewController] updateViewModeToMap];
                 [[self placesViewController] showArticleURL:articleURL];
             }
+        } break;
+        case WMFUserActivityTypeNamedPlace: {
+            NSDictionary *userInfo = activity.userInfo;
+            NSNumber *latitude = userInfo[@"latitude"];
+            NSNumber *longitude = userInfo[@"longitude"];
+            if (!latitude || !longitude) {
+                break;
+            }
+            CLLocationCoordinate2D coordinate = CLLocationCoordinate2DMake(latitude.doubleValue, longitude.doubleValue);
+            NSString *locationName = userInfo[@"locationName"];
+            [self dismissPresentedViewControllers];
+            [self setSelectedIndex:WMFAppTabTypePlaces];
+            [self.currentTabNavigationController popToRootViewControllerAnimated:animated];
+            [[self placesViewController] showCoordinate:coordinate locationName:locationName];
         } break;
         case WMFUserActivityTypeContent: {
             [self dismissPresentedViewControllers];
