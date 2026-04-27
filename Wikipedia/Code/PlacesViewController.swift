@@ -2075,6 +2075,27 @@ class PlacesViewController: ArticleLocationCollectionViewController, UISearchBar
         return completions
     }
 
+    @objc public func showCoordinate(_ coordinate: CLLocationCoordinate2D, locationName: String?) {
+        guard CLLocationCoordinate2DIsValid(coordinate), view != nil else {
+            return
+        }
+        let span = MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+        let region = MKCoordinateRegion(center: coordinate, span: span)
+        let description = locationName ?? String(format: "%.4f, %.4f", coordinate.latitude, coordinate.longitude)
+        panMapToNextLocationUpdate = false
+        updateViewModeToMap()
+        currentSearch = PlaceSearch(
+            filter: .top,
+            type: .location,
+            origin: .system,
+            sortStyle: .links,
+            string: nil,
+            region: region,
+            localizedDescription: description,
+            searchResult: nil
+        )
+    }
+
     @objc public func showNearbyArticles() {
         guard view != nil else { // force view instantiation
             return
