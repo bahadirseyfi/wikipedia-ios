@@ -104,6 +104,51 @@ __attribute__((annotate("returns_localized_nsstring"))) static inline NSString *
     return activity;
 }
 
++ (nullable instancetype)wmf_namedPlaceActivityWithURL:(NSURL *)url {
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    NSString *latitudeString = nil;
+    NSString *longitudeString = nil;
+    NSString *locationName = nil;
+
+    for (NSURLQueryItem *item in components.queryItems) {
+        if ([item.name isEqualToString:@"latitude"]) {
+            latitudeString = item.value;
+        } else if ([item.name isEqualToString:@"longitude"]) {
+            longitudeString = item.value;
+        } else if ([item.name isEqualToString:@"locationName"]) {
+            locationName = item.value;
+        }
+    }
+
+    if (!latitudeString || !longitudeString) {
+        return nil;
+    }
+
+    double latitude = latitudeString.doubleValue;
+    double longitude = longitudeString.doubleValue;
+
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        return nil;
+    }
+    // Verify the strings actually represent numbers (doubleValue returns 0 for non-numeric input)
+    if (![latitudeString isEqualToString:@"0"] && latitude == 0) {
+        return nil;
+    }
+    if (![longitudeString isEqualToString:@"0"] && longitude == 0) {
+        return nil;
+    }
+
+    NSUserActivity *activity = [self wmf_pageActivityWithName:@"NamedPlace"];
+    NSMutableDictionary *userInfo = [activity.userInfo mutableCopy];
+    userInfo[@"latitude"] = @(latitude);
+    userInfo[@"longitude"] = @(longitude);
+    if (locationName) {
+        userInfo[@"locationName"] = locationName;
+    }
+    activity.userInfo = userInfo;
+    return activity;
+}
+
 + (nullable instancetype)wmf_activityForWikipediaScheme:(NSURL *)url {
     if (![url.scheme isEqualToString:@"wikipedia"] && ![url.scheme isEqualToString:@"wikipedia-official"]) {
         return nil;
@@ -113,6 +158,8 @@ __attribute__((annotate("returns_localized_nsstring"))) static inline NSString *
         return [self wmf_contentActivityWithURL:url];
     } else if ([url.host isEqualToString:@"explore"]) {
         return [self wmf_exploreViewActivity];
+    } else if ([url.host isEqualToString:@"namedPlace"]) {
+        return [self wmf_namedPlaceActivityWithURL:url];
     } else if ([url.host isEqualToString:@"places"]) {
         return [self wmf_placesActivityWithURL:url];
     } else if ([url.host isEqualToString:@"saved"]) {
@@ -209,6 +256,8 @@ __attribute__((annotate("returns_localized_nsstring"))) static inline NSString *
             return WMFUserActivityTypeSearch;
         } else if ([page isEqualToString:@"AppearanceSettings"]) {
             return WMFUserActivityTypeAppearanceSettings;
+        } else if ([page isEqualToString:@"NamedPlace"]) {
+            return WMFUserActivityTypeNamedPlace;
         } else {
             return WMFUserActivityTypeSettings;
         }
